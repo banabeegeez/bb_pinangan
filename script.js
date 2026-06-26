@@ -48,14 +48,20 @@
   let touchStartY = 0;
   let isDragging = false;
   const totalImages = images.length;
-  const preloadRange = 2; // Preload current + nearby images for faster startup
+  const preloadRange = 1; // Preload only the current image and the nearest neighbor
   const imageCache = new Set();
+  const thumbRenderRadius = 14; // render only nearby thumbnails initially
+  const thumbUnloadRadius = 28; // keep a wider buffer before unloading
+  let visibleThumbStart = 0;
+  let visibleThumbEnd = -1;
+  let deferredPreloadId = null;
 
   // --- Initialize ---
   function init() {
     totalNum.textContent = totalImages;
     createSlides();
     createThumbnails();
+    updateVisibleThumbnails(0);
     initThumbnailObserver();
     createParticles();
     bindEvents();
@@ -93,15 +99,13 @@
       const thumb = document.createElement("div");
       thumb.className = "thumb";
       thumb.dataset.index = i;
+      thumb.dataset.src = `images/${images[i]}`;
 
-      const img = document.createElement("img");
-      // Use data-src and let IntersectionObserver set `src` when needed
-      img.loading = "lazy";
-      img.decoding = "async";
-      img.dataset.src = `images/${images[i]}`;
-      img.alt = `Thumbnail ${i + 1}`;
+      if (i <= thumbRenderRadius) {
+        const img = createThumbImage(i);
+        thumb.appendChild(img);
+      }
 
-      thumb.appendChild(img);
       thumb.addEventListener("click", () => {
         goToSlide(i);
         resetAutoplay();
@@ -109,6 +113,56 @@
       fragment.appendChild(thumb);
     }
     thumbStrip.appendChild(fragment);
+  }
+
+  function createThumbImage(index) {
+    const img = document.createElement("img");
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.dataset.src = `images/${images[index]}`;
+    img.alt = `Thumbnail ${index + 1}`;
+    img.className = "thumb-img";
+    img.src = img.dataset.src;
+    img.onload = () => img.classList.add("loaded");
+    img.onerror = () => img.classList.add("loaded");
+    return img;
+  }
+
+  function ensureThumbImage(index) {
+    const thumb = thumbStrip.children[index];
+    if (!thumb || thumb.querySelector("img")) return;
+    const img = createThumbImage(index);
+    thumb.appendChild(img);
+  }
+
+  function unloadThumbImage(index) {
+    const thumb = thumbStrip.children[index];
+    if (!thumb) return;
+    const img = thumb.querySelector("img");
+    if (img) {
+      thumb.removeChild(img);
+    }
+  }
+
+  function updateVisibleThumbnails(centerIndex) {
+    const start = Math.max(0, centerIndex - thumbRenderRadius);
+    const end = Math.min(totalImages - 1, centerIndex + thumbRenderRadius);
+
+    for (let i = start; i <= end; i++) {
+      ensureThumbImage(i);
+    }
+
+    if (visibleThumbEnd >= 0) {
+      for (let i = visibleThumbStart; i < start; i++) {
+        if (i < centerIndex - thumbUnloadRadius) unloadThumbImage(i);
+      }
+      for (let i = end + 1; i <= visibleThumbEnd; i++) {
+        if (i > centerIndex + thumbUnloadRadius) unloadThumbImage(i);
+      }
+    }
+
+    visibleThumbStart = start;
+    visibleThumbEnd = end;
   }
 
   // --- Thumbnail lazy-loading via IntersectionObserver ---
@@ -125,36 +179,34 @@
       return;
     }
 
-    const options = { root: thumbStrip, rootMargin: "400px", threshold: 0.01 };
+    const options = { root: thumbStrip, rootMargin: "300px", threshold: 0.01 };
     thumbObserver = new IntersectionObserver((entries, observer) => {
       entries.forEach((entry) => {
         if (!entry.isIntersecting) return;
-        const img = entry.target.querySelector("img");
-        if (img && img.dataset && img.dataset.src && !img.src) {
-          img.src = img.dataset.src;
-          img.onload = () => img.classList.add("loaded");
-          img.onerror = () => img.classList.add("loaded");
+        const thumb = entry.target;
+        const index = Number(thumb.dataset.index);
+        if (Math.abs(index - currentIndex) <= thumbUnloadRadius) {
+          ensureThumbImage(index);
         }
-        observer.unobserve(entry.target);
+        observer.unobserve(thumb);
       });
     }, options);
 
     const thumbs = thumbStrip.querySelectorAll(".thumb");
     thumbs.forEach((t) => thumbObserver.observe(t));
 
-    // After initial idle, load any remaining thumbnails in low-priority
+    // After initial idle, load the nearest thumbnail window only
     const idleCb =
       window.requestIdleCallback ||
       function (fn) {
         return setTimeout(fn, 1000);
       };
     idleCb(() => {
-      thumbs.forEach((t) => {
-        const img = t.querySelector("img");
-        if (img && img.dataset && img.dataset.src && !img.src) {
-          img.src = img.dataset.src;
-        }
-      });
+      const start = Math.max(0, currentIndex - thumbRenderRadius);
+      const end = Math.min(totalImages - 1, currentIndex + thumbRenderRadius);
+      for (let i = start; i <= end; i++) {
+        ensureThumbImage(i);
+      }
     });
   }
 
@@ -231,6 +283,8 @@
 
     // Load current + nearby images
     preloadImages(currentIndex);
+    scheduleDeferredPreload(currentIndex);
+    updateVisibleThumbnails(currentIndex);
 
     // Update counter
     currentNum.textContent = currentIndex + 1;
@@ -258,6 +312,7 @@
 
   // --- Image Preloading ---
   function preloadImages(centerIndex) {
+    clearDeferredPreload();
     for (let offset = -1; offset <= preloadRange; offset++) {
       let idx = centerIndex + offset;
       if (idx < 0) idx += totalImages;
@@ -277,6 +332,36 @@
         hideLoader();
       }
     }
+  }
+
+  function scheduleDeferredPreload(centerIndex) {
+    clearDeferredPreload();
+    deferredPreloadId = window.requestIdleCallback
+      ? window.requestIdleCallback(() => deferredPreload(centerIndex))
+      : setTimeout(() => deferredPreload(centerIndex), 300);
+  }
+
+  function clearDeferredPreload() {
+    if (!deferredPreloadId) return;
+    if (window.cancelIdleCallback && typeof deferredPreloadId === "number") {
+      window.cancelIdleCallback(deferredPreloadId);
+    } else {
+      clearTimeout(deferredPreloadId);
+    }
+    deferredPreloadId = null;
+  }
+
+  function deferredPreload(centerIndex) {
+    const nextIndex = (centerIndex + 1) % totalImages;
+    const prevIndex = (centerIndex - 1 + totalImages) % totalImages;
+    [nextIndex, prevIndex].forEach((idx) => {
+      const slideEl = slideTrack.children[idx];
+      if (!slideEl) return;
+      const img = slideEl.querySelector("img");
+      if (img && !img.src && img.dataset.src) {
+        loadSlideImage(img, false);
+      }
+    });
   }
 
   function showLoader() {
