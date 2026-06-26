@@ -48,7 +48,8 @@
   let touchStartY = 0;
   let isDragging = false;
   const totalImages = images.length;
-  const preloadRange = 3; // Preload 3 images ahead
+  const preloadRange = 2; // Preload current + nearby images for faster startup
+  const imageCache = new Set();
 
   // --- Initialize ---
   function init() {
@@ -58,6 +59,7 @@
     initThumbnailObserver();
     createParticles();
     bindEvents();
+    preloadPriorityImages(0, 1, 2);
     goToSlide(0, false);
     updateBackground(0);
   }
@@ -72,8 +74,10 @@
 
       const img = document.createElement("img");
       img.alt = `Foto ${i + 1}`;
+      img.loading = "lazy";
+      img.decoding = "async";
       img.dataset.src = `images/${images[i]}`;
-      // Don't set src yet — lazy load
+      // Don't set src yet — lazy load slides and preload only nearby images
       img.addEventListener("click", () => openLightbox(i));
 
       slide.appendChild(img);
@@ -154,6 +158,49 @@
     });
   }
 
+  // --- Image Loading Helpers ---
+  function preloadPriorityImages(...indices) {
+    indices.forEach((index) => {
+      if (index < 0 || index >= totalImages) return;
+      const href = `images/${images[index]}`;
+      const link = document.createElement("link");
+      link.rel = "preload";
+      link.as = "image";
+      link.href = href;
+      link.fetchPriority = "high";
+      document.head.appendChild(link);
+    });
+  }
+
+  function loadSlideImage(img, priority = false) {
+    if (!img || !img.dataset.src || img.src) return;
+    if (imageCache.has(img.dataset.src)) {
+      img.src = img.dataset.src;
+      img.classList.add("loaded");
+      return;
+    }
+
+    img.loading = priority ? "eager" : "lazy";
+    img.decoding = "async";
+    if (priority) {
+      img.fetchPriority = "high";
+    }
+
+    img.src = img.dataset.src;
+    img.onload = () => {
+      imageCache.add(img.dataset.src);
+      img.classList.add("loaded");
+      if (img.closest(".slide")?.dataset.index === String(currentIndex))
+        hideLoader();
+    };
+    img.onerror = () => {
+      imageCache.add(img.dataset.src);
+      img.classList.add("loaded");
+      if (img.closest(".slide")?.dataset.index === String(currentIndex))
+        hideLoader();
+    };
+  }
+
   // --- Create Floating Particles ---
   function createParticles() {
     for (let i = 0; i < 15; i++) {
@@ -220,16 +267,8 @@
       if (!slideEl) continue;
       const img = slideEl.querySelector("img");
       if (img && !img.src && img.dataset.src) {
-        showLoader();
-        img.src = img.dataset.src;
-        img.onload = () => {
-          img.classList.add("loaded");
-          if (idx === currentIndex) hideLoader();
-        };
-        img.onerror = () => {
-          img.classList.add("loaded");
-          if (idx === currentIndex) hideLoader();
-        };
+        if (idx === currentIndex) showLoader();
+        loadSlideImage(img, idx === currentIndex);
       } else if (
         img &&
         img.classList.contains("loaded") &&
@@ -251,7 +290,13 @@
   // --- Background ---
   function updateBackground(index) {
     const imgUrl = `images/${images[index]}`;
+    const bgLoader = new Image();
+    bgLoader.src = imgUrl;
+    bgLoader.onload = () => swapBackground(imgUrl);
+    bgLoader.onerror = () => swapBackground(imgUrl);
+  }
 
+  function swapBackground(imgUrl) {
     if (bgCurrent.classList.contains("active")) {
       bgNext.style.backgroundImage = `url('${imgUrl}')`;
       bgNext.classList.add("active");
@@ -334,6 +379,8 @@
 
   // --- Lightbox ---
   function openLightbox(index) {
+    lightboxImg.loading = "lazy";
+    lightboxImg.decoding = "async";
     lightboxImg.src = `images/${images[index]}`;
     lightbox.classList.add("open");
     document.body.style.overflow = "hidden";
