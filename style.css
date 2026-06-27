@@ -187,9 +187,12 @@ body {
   flex-shrink: 0;
 }
 
-.brand-icon svg {
-  width: 20px;
-  height: 20px;
+.brand-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  border-radius: 8px;
 }
 
 .brand-text h1 {

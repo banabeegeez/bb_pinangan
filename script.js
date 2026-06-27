@@ -56,6 +56,10 @@
   let visibleThumbEnd = -1;
   let deferredPreloadId = null;
 
+  function getImageUrl(filename) {
+    return `images/${filename}?v=20260627`;
+  }
+
   // --- Initialize ---
   function init() {
     totalNum.textContent = totalImages;
@@ -98,7 +102,7 @@
       img.alt = getImageName(images[i]);
       img.loading = "lazy";
       img.decoding = "async";
-      img.dataset.src = `images/${images[i]}`;
+      img.dataset.src = getImageUrl(images[i]);
       // Don't set src yet — lazy load slides and preload only nearby images
       img.addEventListener("click", () => openLightbox(i));
 
@@ -121,7 +125,7 @@
       const thumb = document.createElement("div");
       thumb.className = "thumb";
       thumb.dataset.index = i;
-      thumb.dataset.src = `images/${images[i]}`;
+      thumb.dataset.src = getImageUrl(images[i]);
 
       if (i <= thumbRenderRadius) {
         const img = createThumbImage(i);
@@ -141,7 +145,7 @@
     const img = document.createElement("img");
     img.loading = "lazy";
     img.decoding = "async";
-    img.dataset.src = `images/${images[index]}`;
+    img.dataset.src = getImageUrl(images[index]);
     img.alt = `Thumbnail ${index + 1}`;
     img.className = "thumb-img";
     img.src = img.dataset.src;
@@ -236,7 +240,7 @@
   function preloadPriorityImages(...indices) {
     indices.forEach((index) => {
       if (index < 0 || index >= totalImages) return;
-      const href = `images/${images[index]}`;
+      const href = getImageUrl(images[index]);
       const link = document.createElement("link");
       link.rel = "preload";
       link.as = "image";
@@ -399,7 +403,7 @@
 
   // --- Background ---
   function updateBackground(index) {
-    const imgUrl = `images/${images[index]}`;
+    const imgUrl = getImageUrl(images[index]);
     const bgLoader = new Image();
     bgLoader.src = imgUrl;
     bgLoader.onload = () => swapBackground(imgUrl);
@@ -491,7 +495,7 @@
   function openLightbox(index) {
     lightboxImg.loading = "lazy";
     lightboxImg.decoding = "async";
-    lightboxImg.src = `images/${images[index]}`;
+    lightboxImg.src = getImageUrl(images[index]);
     lightbox.classList.add("open");
     document.body.style.overflow = "hidden";
   }
