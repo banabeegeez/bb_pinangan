@@ -91,6 +91,9 @@
       slide.className = "slide";
       slide.dataset.index = i;
 
+      const media = document.createElement("div");
+      media.className = "slide-media";
+
       const img = document.createElement("img");
       img.alt = getImageName(images[i]);
       img.loading = "lazy";
@@ -103,8 +106,9 @@
       caption.className = "slide-caption";
       caption.textContent = getImageName(images[i]);
 
-      slide.appendChild(img);
-      slide.appendChild(caption);
+      media.appendChild(img);
+      media.appendChild(caption);
+      slide.appendChild(media);
       fragment.appendChild(slide);
     }
     slideTrack.appendChild(fragment);
