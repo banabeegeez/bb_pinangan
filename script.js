@@ -35,6 +35,9 @@
   const lightboxImg = $("#lightbox-img");
   const lightboxClose = $("#lightbox-close");
   const particlesContainer = $("#particles");
+  const coverScreen = $("#cover-screen");
+  const appMain = $("#app-main");
+  const startBtn = $("#start-btn");
 
   // --- State ---
   let currentIndex = 0;
@@ -72,6 +75,14 @@
     preloadPriorityImages(0, 1, 2);
     goToSlide(0, false);
     updateBackground(0);
+  }
+
+  function startGallery() {
+    if (coverScreen) coverScreen.classList.add("hidden");
+    if (appMain) appMain.classList.remove("hidden");
+    if (!isPlaying) {
+      startAutoplay();
+    }
   }
 
   function getImageName(filename) {
@@ -629,6 +640,11 @@
 
     // Play/Pause
     playBtn.addEventListener("click", toggleAutoplay);
+
+    // Cover entry
+    if (startBtn) {
+      startBtn.addEventListener("click", startGallery);
+    }
 
     // Speed selector
     $$(".speed-btn").forEach((btn) => {
