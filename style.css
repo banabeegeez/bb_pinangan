@@ -317,6 +317,24 @@ body {
   transform: scale(1);
 }
 
+.slide-caption {
+  position: absolute;
+  left: 24px;
+  bottom: 24px;
+  padding: 8px 12px;
+  background: rgba(10, 10, 15, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-full);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  box-shadow: var(--shadow-sm);
+  pointer-events: none;
+}
+
 /* Loader */
 .slide-loader {
   position: absolute;

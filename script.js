@@ -70,6 +70,19 @@
     updateBackground(0);
   }
 
+  function getImageName(filename) {
+    return filename.replace(/\.[^/.]+$/, "");
+  }
+
+  function updateSlideCaption(index) {
+    const slide = slideTrack.children[index];
+    if (!slide) return;
+    const caption = slide.querySelector(".slide-caption");
+    if (caption) {
+      caption.textContent = getImageName(images[index]);
+    }
+  }
+
   // --- Create Slides ---
   function createSlides() {
     const fragment = document.createDocumentFragment();
@@ -79,14 +92,19 @@
       slide.dataset.index = i;
 
       const img = document.createElement("img");
-      img.alt = `Foto ${i + 1}`;
+      img.alt = getImageName(images[i]);
       img.loading = "lazy";
       img.decoding = "async";
       img.dataset.src = `images/${images[i]}`;
       // Don't set src yet — lazy load slides and preload only nearby images
       img.addEventListener("click", () => openLightbox(i));
 
+      const caption = document.createElement("div");
+      caption.className = "slide-caption";
+      caption.textContent = getImageName(images[i]);
+
       slide.appendChild(img);
+      slide.appendChild(caption);
       fragment.appendChild(slide);
     }
     slideTrack.appendChild(fragment);
@@ -288,6 +306,9 @@
 
     // Update counter
     currentNum.textContent = currentIndex + 1;
+
+    // Update slide caption
+    updateSlideCaption(currentIndex);
 
     // Update progress
     updateProgressBar();
