@@ -38,6 +38,7 @@
   const coverScreen = $("#cover-screen");
   const appMain = $("#app-main");
   const startBtn = $("#start-btn");
+  const coverImage = $("#cover-image");
 
   // --- State ---
   let currentIndex = 0;
@@ -71,10 +72,23 @@
     updateVisibleThumbnails(0);
     initThumbnailObserver();
     createParticles();
+    setupCoverImage();
     bindEvents();
     preloadPriorityImages(0, 1, 2);
     goToSlide(0, false);
     updateBackground(0);
+  }
+
+  function setupCoverImage() {
+    if (!coverImage) return;
+    coverImage.loading = "eager";
+    coverImage.decoding = "async";
+    coverImage.src = "covers/cover.jpg";
+    coverImage.onerror = () => {
+      if (coverImage.dataset.fallbackApplied === "true") return;
+      coverImage.dataset.fallbackApplied = "true";
+      coverImage.src = getImageUrl(images[0]);
+    };
   }
 
   function startGallery() {
