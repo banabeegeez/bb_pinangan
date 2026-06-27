@@ -842,6 +842,91 @@ body {
   }
 }
 
+@media (min-width: 1280px) {
+  .header {
+    padding: 22px 32px;
+  }
+
+  .brand-icon {
+    width: 56px;
+    height: 56px;
+  }
+
+  .brand-text h1 {
+    font-size: 1.45rem;
+  }
+
+  .brand-subtitle {
+    font-size: 0.8rem;
+  }
+
+  .counter-pill {
+    padding: 10px 18px;
+    font-size: 0.95rem;
+  }
+
+  .icon-btn {
+    width: 48px;
+    height: 48px;
+  }
+
+  .slide {
+    padding: 16px 16px 72px;
+  }
+
+  .slide-caption {
+    bottom: 24px;
+    padding: 10px 16px;
+    font-size: 0.95rem;
+  }
+
+  .nav-arrow {
+    width: 58px;
+    height: 58px;
+  }
+
+  .nav-arrow svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .controls {
+    padding: 16px 32px;
+    gap: 20px;
+  }
+
+  .control-btn {
+    width: 52px;
+    height: 52px;
+  }
+
+  .thumb-strip {
+    padding: 14px 32px 20px;
+    gap: 10px;
+  }
+
+  .thumb {
+    width: 76px;
+    height: 50px;
+  }
+}
+
+@media (min-height: 900px) {
+  .cover-content {
+    width: min(90vw, 720px);
+    gap: 24px;
+  }
+
+  .cover-image {
+    max-height: 76vh;
+  }
+
+  .cover-btn {
+    padding: 14px 28px;
+    font-size: 1rem;
+  }
+}
+
 /* --- Animations --- */
 @keyframes fadeInUp {
   from {
