@@ -633,6 +633,35 @@ body {
   pointer-events: none;
 }
 
+:fullscreen .thumb-strip,
+:fullscreen .controls,
+:fullscreen .header {
+  display: none !important;
+}
+
+:fullscreen .slideshow {
+  height: 100vh;
+  height: 100dvh;
+}
+
+:fullscreen .slide {
+  padding: 0;
+}
+
+:fullscreen .slide-media {
+  height: 100%;
+}
+
+:fullscreen .slide img {
+  max-width: 100vw;
+  max-height: 100vh;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 0;
+  box-shadow: none;
+}
+
 .thumb-strip::-webkit-scrollbar {
   height: 4px;
 }
